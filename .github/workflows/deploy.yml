@@ -2,11 +2,11 @@ name: Deploy Golang Backend
 
 on:
   push:
-    branches: [ main ] # main branch එකට push කරද්දී වැඩේ වෙන්න
+    branches: [ main ]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: go-backend # ඔයාට කැමති නමක් දෙන්න
+  IMAGE_NAME: go-backend
 
 jobs:
   build-and-push:
@@ -28,10 +28,8 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          # GitHub username එක lowercase කරන්න (usernames වල uppercase තිබුණොත් error එන නිසා)
           LOWER_REPO=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_ID=$REGISTRY/$LOWER_REPO/$IMAGE_NAME
-          
           docker build -t $IMAGE_ID:latest .
           docker push $IMAGE_ID:latest
 
@@ -58,10 +56,17 @@ jobs:
             docker stop go-backend-app || true
             docker rm go-backend-app || true
             
-            # අලුත් container එක run කිරීම
+            # අලුත් container එක run කිරීම (Environment variables සමඟ)
             docker run -d \
               --name go-backend-app \
               --network my-network \
               --restart unless-stopped \
-              -p 8080:8080 \
+              -p 8081:8081 \
+              -e DB_HOST=mysql-db \
+              -e DB_PORT=3306 \
+              -e DB_USER=root \
+              -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
+              -e DB_NAME=expense_tracker \
+              -e SERVER_PORT=8081 \
+              -e JWT_SECRET='${{ secrets.JWT_SECRET }}' \
               $IMAGE_ID:latest

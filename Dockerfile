@@ -26,6 +26,6 @@ COPY --from=builder /app/main .
 COPY --from=builder /app/.env . 
 
 # App එක දුවන Port එක (සාමාන්‍යයෙන් 8080)
-EXPOSE 8080
+EXPOSE 8090
 
 CMD ["./main"]
