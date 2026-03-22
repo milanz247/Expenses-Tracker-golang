@@ -52,11 +52,11 @@ jobs:
             
             docker pull $IMAGE_ID:latest
             
-            # පරණ container එක අයින් කිරීම
+            # Remove the old container
             docker stop go-backend-app || true
             docker rm go-backend-app || true
             
-            # අලුත් container එක run කිරීම (Environment variables සමඟ)
+            # Run the new container (with Environment variables)
             docker run -d \
               --name go-backend-app \
               --network my-network \
