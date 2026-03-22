@@ -10,7 +10,7 @@ import (
 	"expense-tracker-api/middleware"
 )
 
-func SetupRoutes(authHandler *handlers.AuthHandler, accountHandler *handlers.AccountHandler, categoryHandler *handlers.CategoryHandler, summaryHandler *handlers.SummaryHandler, jwtSecret string) *gin.Engine {
+func SetupRoutes(authHandler *handlers.AuthHandler, accountHandler *handlers.AccountHandler, categoryHandler *handlers.CategoryHandler, budgetHandler *handlers.BudgetHandler, debtHandler *handlers.DebtHandler, summaryHandler *handlers.SummaryHandler, jwtSecret string) *gin.Engine {
 	r := gin.Default()
 
 	// CORS must be registered before any routes
@@ -36,6 +36,11 @@ func SetupRoutes(authHandler *handlers.AuthHandler, accountHandler *handlers.Acc
 	{
 		protected.GET("/me", authHandler.GetMe)
 
+		// User profile & preferences
+		protected.PUT("/user/profile", authHandler.UpdateProfile)
+		protected.PUT("/user/password", authHandler.ChangePassword)
+		protected.PUT("/user/preferences", authHandler.UpdatePreferences)
+
 		// Accounts
 		protected.POST("/accounts", accountHandler.CreateAccount)
 		protected.GET("/accounts", accountHandler.GetAccounts)
@@ -43,11 +48,24 @@ func SetupRoutes(authHandler *handlers.AuthHandler, accountHandler *handlers.Acc
 		// Transactions
 		protected.POST("/transactions", accountHandler.CreateTransaction)
 		protected.GET("/transactions", accountHandler.GetTransactions)
+		protected.DELETE("/transactions/:id", accountHandler.DeleteTransaction)
 
 		// Categories
 		protected.POST("/categories", categoryHandler.CreateCategory)
 		protected.GET("/categories", categoryHandler.GetCategories)
 		protected.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+
+		// Budgets
+		protected.POST("/budgets", budgetHandler.UpsertBudget)
+		protected.GET("/budgets", budgetHandler.GetBudgets)
+		protected.DELETE("/budgets/:id", budgetHandler.DeleteBudget)
+
+		// Debts
+		protected.POST("/debts", debtHandler.CreateDebt)
+		protected.GET("/debts", debtHandler.GetDebts)
+		protected.GET("/debts/summary", debtHandler.GetDebtSummary)
+		protected.POST("/debts/:id/repay", debtHandler.RepayDebt)
+		protected.DELETE("/debts/:id", debtHandler.DeleteDebt)
 
 		// Summary
 		protected.GET("/summary", summaryHandler.GetSummary)

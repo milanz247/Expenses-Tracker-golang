@@ -33,6 +33,14 @@ type RecentTransaction struct {
 	Type        string    `json:"type"`
 }
 
+type BudgetStatus struct {
+	CategoryID   uint    `json:"category_id"`
+	CategoryName string  `json:"category_name"`
+	BudgetLimit  float64 `json:"budget_limit"`
+	PercentUsed  float64 `json:"percent_used"`
+	Spent        float64 `json:"spent"`
+}
+
 type DailySpending struct {
 	Day    string  `json:"day"`
 	Amount float64 `json:"amount"`
@@ -136,6 +144,48 @@ func (h *SummaryHandler) GetSummary(c *gin.Context) {
 		weekly[i] = DailySpending{Day: label, Amount: dayMap[key]}
 	}
 
+	// ── 7. Budget Status for current month ──────────────────────────────────
+	var budgets []models.Budget
+	h.db.Where("user_id = ? AND month = ? AND year = ?",
+		userID, int(now.Month()), now.Year()).
+		Find(&budgets)
+
+	budgetStatus := make([]BudgetStatus, len(budgets))
+	for i, budget := range budgets {
+		var spent float64
+		// Get category name for better filtering
+		var cat models.Category
+		if err := h.db.First(&cat, budget.CategoryID).Error; err == nil {
+			h.db.Model(&models.Transaction{}).
+				Select("COALESCE(SUM(amount), 0)").
+				Where("user_id = ? AND category = ? AND type = 'expense' AND date >= ? AND date < ? AND deleted_at IS NULL",
+					userID, cat.Name, startOfMonth, endOfMonth).
+				Scan(&spent)
+		}
+
+		percentUsed := float64(0)
+		if budget.Amount > 0 {
+			percentUsed = (spent / budget.Amount) * 100
+		}
+
+		budgetStatus[i] = BudgetStatus{
+			CategoryID:   budget.CategoryID,
+			CategoryName: cat.Name,
+			BudgetLimit:  budget.Amount,
+			PercentUsed:  percentUsed,
+			Spent:        spent,
+		}
+	}
+
+	// ── 8. Debt Summary ─────────────────────────────────────────────────────
+	var debtToPay float64
+	h.db.Raw("SELECT COALESCE(SUM(amount - paid_amount), 0) FROM debts WHERE user_id = ? AND type = 'BORROW' AND status = 'OPEN' AND deleted_at IS NULL", userID).
+		Scan(&debtToPay)
+
+	var debtToReceive float64
+	h.db.Raw("SELECT COALESCE(SUM(amount - paid_amount), 0) FROM debts WHERE user_id = ? AND type = 'LEND' AND status = 'OPEN' AND deleted_at IS NULL", userID).
+		Scan(&debtToReceive)
+
 	c.JSON(http.StatusOK, gin.H{
 		"total_balance":       totalBalance,
 		"monthly_income":      monthlyIncome,
@@ -143,5 +193,8 @@ func (h *SummaryHandler) GetSummary(c *gin.Context) {
 		"expense_breakdown":   breakdown,
 		"recent_transactions": recent,
 		"weekly_spending":     weekly,
+		"budget_status":       budgetStatus,
+		"debt_to_pay":         debtToPay,
+		"debt_to_receive":     debtToReceive,
 	})
 }

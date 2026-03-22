@@ -25,6 +25,7 @@ type Transaction struct {
 	UserID      uint           `gorm:"not null;index" json:"user_id"`
 	AccountID   uint           `gorm:"not null" json:"account_id"`
 	ToAccountID *uint          `json:"to_account_id,omitempty"`
+	DebtID      *uint          `gorm:"index" json:"debt_id,omitempty"` // set on repayment / initial debt transactions
 	Amount      float64        `gorm:"not null" json:"amount"`
 	Type        string         `gorm:"size:50;not null" json:"type"`
 	Category    string         `gorm:"size:255" json:"category"`
