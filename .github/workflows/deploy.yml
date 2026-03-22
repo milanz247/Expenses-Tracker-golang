@@ -1,0 +1,67 @@
+name: Deploy Golang Backend
+
+on:
+  push:
+    branches: [ main ] # main branch එකට push කරද්දී වැඩේ වෙන්න
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: go-backend # ඔයාට කැමති නමක් දෙන්න
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          # GitHub username එක lowercase කරන්න (usernames වල uppercase තිබුණොත් error එන නිසා)
+          LOWER_REPO=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_ID=$REGISTRY/$LOWER_REPO/$IMAGE_NAME
+          
+          docker build -t $IMAGE_ID:latest .
+          docker push $IMAGE_ID:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Login to GHCR on VPS
+            echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            LOWER_REPO=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+            IMAGE_ID=ghcr.io/$LOWER_REPO/go-backend
+            
+            docker pull $IMAGE_ID:latest
+            
+            # පරණ container එක අයින් කිරීම
+            docker stop go-backend-app || true
+            docker rm go-backend-app || true
+            
+            # අලුත් container එක run කිරීම
+            docker run -d \
+              --name go-backend-app \
+              --network my-network \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              $IMAGE_ID:latest
