@@ -15,7 +15,7 @@ func SetupRoutes(authHandler *handlers.AuthHandler, accountHandler *handlers.Acc
 
 	// CORS must be registered before any routes
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://ledgr.milanmadusanka.me"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
