@@ -10,7 +10,7 @@ import (
 	"expense-tracker-api/middleware"
 )
 
-func SetupRoutes(authHandler *handlers.AuthHandler, jwtSecret string) *gin.Engine {
+func SetupRoutes(authHandler *handlers.AuthHandler, accountHandler *handlers.AccountHandler, categoryHandler *handlers.CategoryHandler, summaryHandler *handlers.SummaryHandler, jwtSecret string) *gin.Engine {
 	r := gin.Default()
 
 	// CORS must be registered before any routes
@@ -35,6 +35,22 @@ func SetupRoutes(authHandler *handlers.AuthHandler, jwtSecret string) *gin.Engin
 	protected.Use(middleware.AuthMiddleware(jwtSecret))
 	{
 		protected.GET("/me", authHandler.GetMe)
+
+		// Accounts
+		protected.POST("/accounts", accountHandler.CreateAccount)
+		protected.GET("/accounts", accountHandler.GetAccounts)
+
+		// Transactions
+		protected.POST("/transactions", accountHandler.CreateTransaction)
+		protected.GET("/transactions", accountHandler.GetTransactions)
+
+		// Categories
+		protected.POST("/categories", categoryHandler.CreateCategory)
+		protected.GET("/categories", categoryHandler.GetCategories)
+		protected.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+
+		// Summary
+		protected.GET("/summary", summaryHandler.GetSummary)
 	}
 
 	return r

@@ -16,8 +16,11 @@ func main() {
 	database := db.Connect(cfg)
 
 	authHandler := handlers.NewAuthHandler(database, cfg.JWTSecret)
+	accountHandler := handlers.NewAccountHandler(database)
+	categoryHandler := handlers.NewCategoryHandler(database)
+	summaryHandler := handlers.NewSummaryHandler(database)
 
-	router := routes.SetupRoutes(authHandler, cfg.JWTSecret)
+	router := routes.SetupRoutes(authHandler, accountHandler, categoryHandler, summaryHandler, cfg.JWTSecret)
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Server starting on %s", addr)
