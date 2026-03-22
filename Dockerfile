@@ -22,9 +22,6 @@ WORKDIR /root/
 
 # Builder stage එකෙන් binary එක විතරක් ගමු
 COPY --from=builder /app/main .
-# ඔයාට .env file එකක් තියෙනවා නම් ඒකත් copy කරන්න
-COPY --from=builder /app/.env . 
-
 # App එක දුවන Port එක (සාමාන්‍යයෙන් 8080)
 EXPOSE 8081
 
