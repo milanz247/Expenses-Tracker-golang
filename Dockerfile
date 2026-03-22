@@ -1,5 +1,5 @@
 # Stage 1: Build the binary
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Build එකට අවශ්‍ය tools install කිරීම
 RUN apk add --no-cache git
